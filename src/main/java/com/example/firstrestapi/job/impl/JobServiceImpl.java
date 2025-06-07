@@ -1,61 +1,58 @@
 package com.example.firstrestapi.job.impl;
 
 import com.example.firstrestapi.job.Job;
+import com.example.firstrestapi.job.JobRepository;
 import com.example.firstrestapi.job.JobService;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class JobServiceImpl implements JobService {
-    private final List<Job> jobs = new ArrayList<>();
-    private Long nextId = 1L;
+    JobRepository jobRepository;
+
+    public JobServiceImpl(JobRepository jobRepository) {
+        this.jobRepository = jobRepository;
+    }
 
     @Override
     public void create(Job job) {
-        job.setId(nextId++);
-        jobs.add(job);
+        jobRepository.save(job);
     }
 
     @Override
     public Job findById(Long id) {
-        for (Job job : jobs) {
-            if (!job.getId().equals(id)) continue;
-            return job;
-        }
-        return null;
+        return jobRepository.findById(id).orElse(null);
     }
 
     @Override
     public List<Job> findAll() {
-        return jobs;
+        return jobRepository.findAll();
     }
 
     @Override
     public boolean update(Long id, Job newJob) {
-        for (Job job : jobs) {
-            if (!job.getId().equals(id)) continue;
-            job.setTitle(newJob.getTitle());
-            job.setDescription(newJob.getDescription());
-            job.setMinSalary(newJob.getMinSalary());
-            job.setMaxSalary(newJob.getMaxSalary());
-            job.setLocation(newJob.getLocation());
-            return true;
-        }
-        return false;
+        Optional<Job> jobOptional = jobRepository.findById(id);
+        if (jobOptional.isEmpty()) return false;
+
+        Job job = jobOptional.get();
+        job.setTitle(newJob.getTitle());
+        job.setDescription(newJob.getDescription());
+        job.setMinSalary(newJob.getMinSalary());
+        job.setMaxSalary(newJob.getMaxSalary());
+        job.setLocation(newJob.getLocation());
+        jobRepository.save(job);
+        return true;
     }
 
     @Override
     public boolean delete(Long id) {
-        Iterator<Job> iterator = jobs.iterator();
-        while (iterator.hasNext()) {
-            Job job = iterator.next();
-            if (!job.getId().equals(id)) continue;
-            iterator.remove();
+        try {
+            jobRepository.deleteById(id);
             return true;
+        } catch (Exception e) {
+            return false;
         }
-        return false;
     }
 }
